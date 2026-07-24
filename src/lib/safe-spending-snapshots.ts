@@ -1,4 +1,4 @@
-import { calculateSafeSpending } from "./safe-spending.ts";
+import { calculateSafeSpending } from "./safe-spending";
 import type { Budget, FinancialAccount, RecurringExpense, SafeSpendingSnapshot, SavingsGoal } from "./types";
 
 export type SnapshotRecord = {
@@ -125,7 +125,7 @@ export async function saveSafeSpendingSnapshot(
   inputs: SafeSpendingSnapshotInputs,
   options: { capturedAt?: Date; client?: SnapshotClient } = {}
 ) {
-  const client = options.client ?? ((await import("./prisma.ts")).prisma as unknown as SnapshotClient);
+  const client = options.client ?? ((await import("./prisma")).prisma as unknown as SnapshotClient);
   const payload = buildSafeSpendingSnapshotPayload(inputs, options.capturedAt);
   const record = await client.safeSpendingSnapshot.create({
     data: {
@@ -141,7 +141,7 @@ export async function getLatestSafeSpendingSnapshot(
   userId: string,
   options: { client?: SnapshotClient } = {}
 ) {
-  const client = options.client ?? ((await import("./prisma.ts")).prisma as unknown as SnapshotClient);
+  const client = options.client ?? ((await import("./prisma")).prisma as unknown as SnapshotClient);
   const record = await client.safeSpendingSnapshot.findFirst({
     where: { userId },
     orderBy: { capturedAt: "desc" },
