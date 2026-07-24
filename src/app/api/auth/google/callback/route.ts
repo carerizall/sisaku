@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/auth";
+import { getGoogleRedirectUri } from "@/lib/google-oauth";
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo";
@@ -18,10 +19,6 @@ type GoogleUserInfo = {
   email_verified?: boolean;
   name?: string;
 };
-
-function getGoogleRedirectUri(request: Request) {
-  return process.env.GOOGLE_REDIRECT_URI ?? new URL("/api/auth/google/callback", request.url).toString();
-}
 
 function redirectToLogin(request: Request, message: string) {
   const url = new URL("/auth/login", request.url);

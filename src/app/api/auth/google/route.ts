@@ -1,12 +1,9 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
+import { getGoogleRedirectUri } from "@/lib/google-oauth";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_STATE_COOKIE = "sisaku_google_oauth_state";
-
-function getGoogleRedirectUri(request: Request) {
-  return process.env.GOOGLE_REDIRECT_URI ?? new URL("/api/auth/google/callback", request.url).toString();
-}
 
 export async function GET(request: Request) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
