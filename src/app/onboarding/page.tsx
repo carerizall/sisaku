@@ -190,6 +190,7 @@ export default function OnboardingPage() {
       setUser(data.user);
       
       // Populate store dengan data dari server menggunakan loadFinanceData
+      // skipAutoSync=true prevents immediate override by auto-sync useEffect
       if (data.finance) {
         loadFinanceData({
           accounts: data.finance.accounts,
@@ -198,7 +199,7 @@ export default function OnboardingPage() {
           savingsGoals: data.finance.savingsGoals,
           recurringExpenses: data.finance.recurringExpenses,
           categories: data.finance.categories as [],
-        });
+        }, true);
       }
       
       // Only complete onboarding and redirect if API call succeeded

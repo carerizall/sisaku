@@ -78,7 +78,7 @@ interface StoreContextType {
   addRecurringExpense: (re: Omit<RecurringExpense, "id" | "userId" | "active">) => void;
   completeOnboarding: () => void;
   resetAllData: () => void;
-  loadFinanceData: (data: FinanceBootstrap) => void;
+  loadFinanceData: (data: FinanceBootstrap, skipAutoSync?: boolean) => void;
 }
 
 type FinanceBootstrap = Pick<
@@ -177,7 +177,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const safeSpending = serverSafeSpending ?? calculatedSafeSpending;
 
-  const applyFinanceBootstrap = useCallback((data: FinanceBootstrap) => {
+  const applyFinanceBootstrap = useCallback((data: FinanceBootstrap, skipAutoSync = false) => {
     setAccounts(data.accounts);
     setCategories(data.categories);
     setTransactions(data.transactions);
@@ -185,6 +185,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSavingsGoals(data.savingsGoals);
     setRecurringExpenses(data.recurringExpenses);
     setServerSafeSpending(data.safeSpending ?? null);
+    
+    // Mark timestamp to prevent immediate override by auto-sync
+    if (skipAutoSync && typeof window !== "undefined") {
+      sessionStorage.setItem("sisaku_skip_autosync_until", String(Date.now() + 2000)); // Skip for 2 seconds
+    }
   }, []);
 
   const syncFinance = useCallback(async (endpoint: string, init?: RequestInit) => {
@@ -225,6 +230,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!mounted || !user?.id) return;
+    
+    // Check if we should skip auto-sync (e.g., right after onboarding)
+    if (typeof window !== "undefined") {
+      const skipUntil = sessionStorage.getItem("sisaku_skip_autosync_until");
+      if (skipUntil && Date.now() < Number(skipUntil)) {
+        return; // Skip this auto-sync
+      }
+    }
+    
     const timeoutId = window.setTimeout(() => {
       void syncFinance("/api/finance/bootstrap");
     }, 0);
