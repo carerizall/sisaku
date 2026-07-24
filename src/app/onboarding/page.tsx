@@ -7,7 +7,7 @@ import { useStore, ACCOUNT_TYPE_CONFIG } from "@/lib/store";
 import { calculateSafeSpending } from "@/lib/safe-spending";
 import { formatRupiah, cn, getStatusColor, getStatusIcon, getStatusLabel } from "@/lib/utils";
 import { dateInputToUtcIso, getLocalDateInputValue } from "@/lib/timezone";
-import type { AccountType, FinancialAccount, RecurringExpense, SavingsGoal } from "@/lib/types";
+import type { AccountType, FinancialAccount, RecurringExpense, SavingsGoal, Transaction } from "@/lib/types";
 
 function BrandLogo() {
   return (
@@ -168,7 +168,18 @@ export default function OnboardingPage() {
           savingsGoal: goalEnabled ? goal : null,
         }),
       });
-      const data = (await response.json()) as { message?: string; user?: typeof user };
+      const data = (await response.json()) as { 
+        message?: string; 
+        user?: typeof user;
+        finance?: {
+          accounts: FinancialAccount[];
+          transactions: unknown[];
+          budgets: unknown[];
+          savingsGoals: SavingsGoal[];
+          recurringExpenses: RecurringExpense[];
+          categories: unknown[];
+        };
+      };
 
       if (!response.ok || !data.user) {
         setError(data.message ?? "Gagal menyelesaikan onboarding.");
@@ -176,6 +187,29 @@ export default function OnboardingPage() {
       }
 
       setUser(data.user);
+      
+      // Populate store dengan data dari server
+      if (data.finance) {
+        // Load accounts
+        data.finance.accounts.forEach(account => {
+          addAccount(account);
+        });
+        
+        // Load transactions (cast dari unknown ke Transaction)
+        data.finance.transactions.forEach(transaction => {
+          addTransaction(transaction as Transaction);
+        });
+        
+        // Load recurring expenses
+        data.finance.recurringExpenses.forEach(expense => {
+          addRecurringExpense(expense);
+        });
+        
+        // Load savings goals
+        data.finance.savingsGoals.forEach(goal => {
+          addSavingsGoal(goal);
+        });
+      }
     } catch {
       submitLocalFallback();
     } finally {
