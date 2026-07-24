@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { getCurrentUser, destroyCurrentSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { trackAnalyticsEvent } from "@/lib/analytics";
@@ -10,7 +11,7 @@ export async function DELETE() {
   try {
     trackAnalyticsEvent("account_deleted_requested", { account_age_days: Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86_400_000) });
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.authSession.deleteMany({ where: { userId: user.id } });
       await tx.auditLog.deleteMany({ where: { userId: user.id } });
       await tx.safeSpendingSnapshot.deleteMany({ where: { userId: user.id } });

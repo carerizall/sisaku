@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, toAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { accountClassForType, ensureDefaultCategories, getFinanceBootstrap } from "@/lib/finance";
-import type { AccountType } from "@prisma/client";
+import type { AccountType, Prisma } from "@prisma/client";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export async function POST(request: Request) {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     prisma.category.findFirst({ where: { userId: currentUser.id, type: "expense", name: "Tagihan" } }),
   ]);
 
-  const user = await prisma.$transaction(async (tx) => {
+  const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const updatedUser = await tx.user.update({
       where: { id: currentUser.id },
       data: { displayName, isOnboarded: true },

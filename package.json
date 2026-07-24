@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "node --test src/lib/safe-spending.test.ts src/lib/safe-spending-snapshots.test.ts src/lib/reports.test.ts src/lib/audit-log.test.ts src/lib/backdated.test.ts"
