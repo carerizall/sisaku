@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String             @id @default(cuid())
+  email             String             @unique
+  passwordHash      String?
+  googleId          String?            @unique
+  displayName       String
+  preferredCurrency String             @default("IDR")
+  isOnboarded       Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  sessions          AuthSession[]
+  accounts          FinancialAccount[]
+  categories        Category[]
+  transactions      Transaction[]
+  budgets           Budget[]
+  savingsGoals      SavingsGoal[]
+  recurringExpenses RecurringExpense[]
+  safeSpendingSnapshots SafeSpendingSnapshot[]
+  auditLogs         AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model AuthSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum AccountType {
+  cash
+  bank
+  ewallet
+  credit_card
+  other
+}
+
+enum AccountClass {
+  asset
+  liability
+}
+
+enum AccountStatus {
+  active
+  archived
+}
+
+enum CategoryType {
+  income
+  expense
+}
+
+enum CategoryGroup {
+  needs
+  lifestyle
+  savings_debt
+  other
+}
+
+enum CategoryStatus {
+  active
+  disabled
+}
+
+enum TransactionType {
+  income
+  expense
+  transfer
+  savings
+  adjustment
+}
+
+enum BudgetStatus {
+  active
+  exceeded
+}
+
+enum SavingsGoalStatus {
+  active
+  completed
+}
+
+enum RecurringInterval {
+  monthly
+  weekly
+}
+
+enum SafeSpendingStatus {
+  safe
+  warning
+  danger
+}
+
+enum AuditActionType {
+  transaction_created
+  transaction_updated
+  transaction_deleted
+  adjustment_recorded
+  account_archived
+}
+
+enum AuditTargetType {
+  transaction
+  account
+}
+
+model FinancialAccount {
+  id             String        @id @default(cuid())
+  userId         String
+  name           String
+  type           AccountType
+  class          AccountClass
+  initialBalance Decimal       @db.Decimal(18, 2)
+  currentBalance Decimal       @db.Decimal(18, 2)
+  currency       String        @default("IDR")
+  status         AccountStatus @default(active)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions   Transaction[] @relation("AccountTransactions")
+  counterpartyTx Transaction[] @relation("CounterpartyTransactions")
+  savingsGoals   SavingsGoal[]
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+model Category {
+  id                String             @id @default(cuid())
+  userId            String
+  name              String
+  icon              String
+  color             String
+  type              CategoryType
+  group             CategoryGroup      @default(other)
+  status            CategoryStatus     @default(active)
+  isDefault         Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  budgets           Budget[]
+  recurringExpenses RecurringExpense[]
+
+  @@unique([userId, name, type])
+  @@index([userId])
+}
+
+model Transaction {
+  id                    String            @id @default(cuid())
+  userId                String
+  accountId             String
+  type                  TransactionType
+  amount                Decimal           @db.Decimal(18, 2)
+  currency              String            @default("IDR")
+  categoryId            String?
+  counterpartyAccountId String?
+  savingsGoalId         String?
+  date                  DateTime
+  notes                 String?
+  createdAt             DateTime          @default(now())
+  editedAt              DateTime?
+  deletedAt             DateTime?
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account               FinancialAccount  @relation("AccountTransactions", fields: [accountId], references: [id])
+  counterpartyAccount   FinancialAccount? @relation("CounterpartyTransactions", fields: [counterpartyAccountId], references: [id])
+  category              Category?         @relation(fields: [categoryId], references: [id])
+  savingsGoal           SavingsGoal?      @relation(fields: [savingsGoalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, date])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([savingsGoalId])
+}
+
+model Budget {
+  id          String       @id @default(cuid())
+  userId      String
+  categoryId  String
+  monthPeriod String
+  limitAmount Decimal      @db.Decimal(18, 2)
+  status      BudgetStatus @default(active)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId, monthPeriod])
+  @@index([userId])
+  @@index([categoryId])
+}
+
+model SavingsGoal {
+  id              String            @id @default(cuid())
+  userId          String
+  name            String
+  targetAmount    Decimal           @db.Decimal(18, 2)
+  targetDate      DateTime
+  sourceAccountId String?
+  status          SavingsGoalStatus @default(active)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceAccount   FinancialAccount? @relation(fields: [sourceAccountId], references: [id], onDelete: SetNull)
+  transactions    Transaction[]
+
+  @@index([userId])
+  @@index([sourceAccountId])
+}
+
+model RecurringExpense {
+  id          String            @id @default(cuid())
+  userId      String
+  name        String
+  amount      Decimal           @db.Decimal(18, 2)
+  categoryId  String
+  interval    RecurringInterval
+  nextDueDate DateTime
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category          @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([nextDueDate])
+}
+
+model SafeSpendingSnapshot {
+  id                     String             @id @default(cuid())
+  userId                 String
+  periodMonth            String
+  capturedAt             DateTime           @default(now())
+  totalAssets            Decimal            @db.Decimal(18, 2)
+  totalLiabilities       Decimal            @db.Decimal(18, 2)
+  pendingRoutineExpenses Decimal            @db.Decimal(18, 2)
+  savingsAllocation      Decimal            @db.Decimal(18, 2)
+  priorityBudgetReserve  Decimal            @db.Decimal(18, 2)
+  safeSpending           Decimal            @db.Decimal(18, 2)
+  status                 SafeSpendingStatus
+  components             Json
+  createdAt              DateTime           @default(now())
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, capturedAt])
+  @@index([userId, periodMonth])
+}
+
+model AuditLog {
+  id         String          @id @default(cuid())
+  userId     String
+  actorId    String
+  actionType AuditActionType
+  targetType AuditTargetType
+  targetId   String
+  diff       Json
+  timestamp  DateTime        @default(now())
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@index([userId, actionType])
+  @@index([targetType, targetId])
+}
