@@ -200,14 +200,18 @@ export default function OnboardingPage() {
           categories: data.finance.categories as [],
         });
       }
+      
+      // Only complete onboarding and redirect if API call succeeded
+      completeOnboarding();
+      router.push("/");
     } catch {
       submitLocalFallback();
+      // Fallback juga harus complete onboarding dan redirect
+      completeOnboarding();
+      router.push("/");
     } finally {
       setLoading(false);
     }
-
-    completeOnboarding();
-    router.push("/");
   };
 
   const steps = [
