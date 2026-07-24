@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
           email,
           displayName,
           googleId: profile.sub,
+          isOnboarded: false,
         },
       });
     }
