@@ -34,21 +34,32 @@ export async function POST(request: Request) {
 
     const existingAccountCount = await tx.financialAccount.count({ where: { userId: currentUser.id } });
     let primaryAccountId = body.savingsGoal?.sourceAccountId || undefined;
-    if (existingAccountCount === 0 && body.accounts?.length) {
+    
+    if (existingAccountCount === 0) {
+      // User belum punya akun sama sekali
+      const accountsToCreate = body.accounts?.filter((account) => account.name?.trim() && account.type) || [];
+      
+      // Kalau user tidak submit akun apapun, create akun default "Kas"
+      if (accountsToCreate.length === 0) {
+        accountsToCreate.push({
+          name: "Kas",
+          type: "cash" as AccountType,
+          initialBalance: 0,
+        });
+      }
+
       const createdAccounts = await Promise.all(
-        body.accounts
-          .filter((account) => account.name?.trim() && account.type)
-          .map((account) => tx.financialAccount.create({
-            data: {
-              userId: currentUser.id,
-              name: account.name!.trim(),
-              type: account.type!,
-              class: accountClassForType(account.type!),
-              initialBalance: Number(account.initialBalance ?? 0),
-              currentBalance: Number(account.initialBalance ?? 0),
-              currency: "IDR",
-            },
-          }))
+        accountsToCreate.map((account) => tx.financialAccount.create({
+          data: {
+            userId: currentUser.id,
+            name: account.name!.trim(),
+            type: account.type!,
+            class: accountClassForType(account.type!),
+            initialBalance: Number(account.initialBalance ?? 0),
+            currentBalance: Number(account.initialBalance ?? 0),
+            currency: "IDR",
+          },
+        }))
       );
       primaryAccountId = primaryAccountId || createdAccounts.find((account) => account.class === "asset")?.id || createdAccounts[0]?.id;
     } else {
