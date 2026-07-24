@@ -35,6 +35,7 @@ export default function OnboardingPage() {
     addRecurringExpense,
     addSavingsGoal,
     completeOnboarding,
+    loadFinanceData,
   } = useStore();
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -188,26 +189,15 @@ export default function OnboardingPage() {
 
       setUser(data.user);
       
-      // Populate store dengan data dari server
+      // Populate store dengan data dari server menggunakan loadFinanceData
       if (data.finance) {
-        // Load accounts
-        data.finance.accounts.forEach(account => {
-          addAccount(account);
-        });
-        
-        // Load transactions (cast dari unknown ke Transaction)
-        data.finance.transactions.forEach(transaction => {
-          addTransaction(transaction as Transaction);
-        });
-        
-        // Load recurring expenses
-        data.finance.recurringExpenses.forEach(expense => {
-          addRecurringExpense(expense);
-        });
-        
-        // Load savings goals
-        data.finance.savingsGoals.forEach(goal => {
-          addSavingsGoal(goal);
+        loadFinanceData({
+          accounts: data.finance.accounts,
+          transactions: data.finance.transactions as Transaction[],
+          budgets: data.finance.budgets as [],
+          savingsGoals: data.finance.savingsGoals,
+          recurringExpenses: data.finance.recurringExpenses,
+          categories: data.finance.categories as [],
         });
       }
     } catch {

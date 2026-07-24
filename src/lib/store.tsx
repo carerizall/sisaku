@@ -78,6 +78,7 @@ interface StoreContextType {
   addRecurringExpense: (re: Omit<RecurringExpense, "id" | "userId" | "active">) => void;
   completeOnboarding: () => void;
   resetAllData: () => void;
+  loadFinanceData: (data: FinanceBootstrap) => void;
 }
 
 type FinanceBootstrap = Pick<
@@ -430,6 +431,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         addRecurringExpense,
         completeOnboarding,
         resetAllData,
+        loadFinanceData: applyFinanceBootstrap,
       }}
     >
       {children}
