@@ -1,4 +1,4 @@
-import { calculateSafeSpending } from "./safe-spending";
+import { calculateSafeSpending } from "./safe-spending.ts";
 import type { Budget, FinancialAccount, RecurringExpense, SafeSpendingSnapshot, SavingsGoal } from "./types";
 
 export type SnapshotRecord = {
